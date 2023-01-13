@@ -1,4 +1,6 @@
 package com.ryanair.finterconnection.dto;
 
-public record FlightDTO(String carrierCode, String number, String departureTime, String arrivalTime) {
+import java.time.LocalTime;
+
+public record FlightDTO(String carrierCode, String number, LocalTime departureTime, LocalTime arrivalTime) {
 }
