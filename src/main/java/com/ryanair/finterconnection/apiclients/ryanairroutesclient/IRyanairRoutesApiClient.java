@@ -1,4 +1,4 @@
-package com.ryanair.finterconnection.ryanairroutesclient;
+package com.ryanair.finterconnection.apiclients.ryanairroutesclient;
 
 import com.ryanair.finterconnection.dto.RouteDTO;
 

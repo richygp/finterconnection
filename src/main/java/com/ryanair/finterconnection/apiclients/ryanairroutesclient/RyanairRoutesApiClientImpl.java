@@ -1,5 +1,6 @@
-package com.ryanair.finterconnection.ryanairroutesclient;
+package com.ryanair.finterconnection.apiclients.ryanairroutesclient;
 
+import com.ryanair.finterconnection.apiclients.ryanairroutesclient.IRyanairRoutesApiClient;
 import com.ryanair.finterconnection.dto.RouteDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;

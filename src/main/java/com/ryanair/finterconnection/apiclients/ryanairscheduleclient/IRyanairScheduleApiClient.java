@@ -1,4 +1,4 @@
-package com.ryanair.finterconnection.ryanairscheduleclient;
+package com.ryanair.finterconnection.apiclients.ryanairscheduleclient;
 
 import com.ryanair.finterconnection.dto.ScheduleDTO;
 

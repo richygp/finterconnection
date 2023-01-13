@@ -2,8 +2,8 @@ package com.ryanair.finterconnection.controller;
 
 import com.ryanair.finterconnection.dto.RouteDTO;
 import com.ryanair.finterconnection.dto.ScheduleDTO;
-import com.ryanair.finterconnection.ryanairroutesclient.IRyanairRoutesApiClient;
-import com.ryanair.finterconnection.ryanairscheduleclient.IRyanairScheduleApiClient;
+import com.ryanair.finterconnection.apiclients.ryanairroutesclient.IRyanairRoutesApiClient;
+import com.ryanair.finterconnection.apiclients.ryanairscheduleclient.IRyanairScheduleApiClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
