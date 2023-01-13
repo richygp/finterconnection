@@ -15,6 +15,7 @@ public class RyanairRoutesApiClientImpl implements IRyanairRoutesApiClient {
     private String ryanairServicesUrl;
     @Value("${ryanair.routes.path:locate/3/routes}")
     private String path;
+    public static final String OPERATOR_FILTER_NAME = "RYANAIR";
 
     @Override
     public List<RouteDTO> getAvailableRoutes() {
@@ -27,6 +28,7 @@ public class RyanairRoutesApiClientImpl implements IRyanairRoutesApiClient {
                 .uri(this.path)
                 .retrieve()
                 .bodyToFlux(RouteDTO.class)
+                .filter(f -> f.connectingAirport() == null && f.operator().equals(OPERATOR_FILTER_NAME))
                 .collectList()
                 .block();
     }
