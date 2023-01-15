@@ -105,6 +105,7 @@ public class FlightConnectionServiceImpl implements IFlightConnectionService {
         LocalDateTime departureDateTime = flightRequirements.departureDateTime();
         LocalDateTime arrivalDateTime = flightRequirements.arrivalDateTime();
         for (Route route: getOneStopAvailableRoutes(departure, arrival)) {
+            logger.log(Level.INFO, "Calculating available interconnected flights to route: {0}", route);
             routeFlights.add(() -> {
                 List<AbstractMap.SimpleImmutableEntry<Leg, Leg>> rFlights = new ArrayList<>();
                 Leg firstLegRequirements = new Leg(

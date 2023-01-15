@@ -17,6 +17,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.mock-server:mockserver-junit-jupiter:5.14.0'
 }
 
 tasks.named('test') {

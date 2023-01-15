@@ -20,6 +20,15 @@ public class RyanairRoutesApiClientImpl implements IRyanairRoutesApiClient {
     private int timeout;
     public static final String OPERATOR_FILTER_NAME = "RYANAIR";
 
+    public RyanairRoutesApiClientImpl() {
+    }
+
+    public RyanairRoutesApiClientImpl(String ryanairServicesUrl, String path, int timeout) {
+        this.ryanairServicesUrl = ryanairServicesUrl;
+        this.path = path;
+        this.timeout = timeout;
+    }
+
     @Override
     public List<RouteDTO> getAvailableRoutes() {
         WebClient client = WebClient.builder()

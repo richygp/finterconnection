@@ -19,6 +19,15 @@ public class RyanairScheduleApiClientImpl implements IRyanairScheduleApiClient {
     @Value("${request.timeout.seconds:5}")
     private int timeout;
 
+    public RyanairScheduleApiClientImpl() {
+    }
+
+    public RyanairScheduleApiClientImpl(String ryanairServicesUrl, String path, int timeout) {
+        this.ryanairServicesUrl = ryanairServicesUrl;
+        this.path = path;
+        this.timeout = timeout;
+    }
+
     @Override
     public ScheduleDTO getScheduleForYearAndMonth(String departure, String arrival, LocalDateTime departureDateTime) {
         WebClient client = WebClient.builder()
