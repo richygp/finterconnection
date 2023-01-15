@@ -9,6 +9,8 @@ import com.ryanair.finterconnection.dto.ScheduleDTO;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 @Service
 public class FlightConnectionServiceImpl implements IFlightConnectionService {
     private static final Logger logger = Logger.getLogger(FlightConnectionServiceImpl.class.getName());
+    public static final long MIN_INTERCONNECTION_WAITING_HOURS = 2L;
     private final IRyanairRoutesApiClient routesApiClient;
     private final IRyanairScheduleApiClient scheduleApiClient;
 
@@ -33,7 +36,9 @@ public class FlightConnectionServiceImpl implements IFlightConnectionService {
         LocalDateTime departureDateTime = flightRequirements.departureDateTime();
         LocalDateTime arrivalDateTime = flightRequirements.arrivalDateTime();
         ScheduleDTO schedule = scheduleApiClient.getScheduleForYearAndMonth(departure, arrival, departureDateTime);
-        logger.log(Level.INFO, "Filtering all possible flights for a given month based on flight requirements...");
+        logger.log(Level.INFO,
+                "Filtering all possible flights for departure from: {0} {1} and arrival at: {2} {3}",
+                new Object[]{departure, departureDateTime, arrival, arrivalDateTime});
 
         return schedule.days().stream()
                 .filter(d -> d.day() >= departureDateTime.getDayOfMonth() && d.day() <= arrivalDateTime.getDayOfMonth())
@@ -61,19 +66,35 @@ public class FlightConnectionServiceImpl implements IFlightConnectionService {
     }
 
     @Override
-    public List<Leg> getOneStepConnections(Leg flightRequirements) {
+    public List<AbstractMap.SimpleImmutableEntry<Leg, Leg>> getOneStepConnections(Leg flightRequirements) {
         String departure = flightRequirements.departureAirport();
         String arrival = flightRequirements.arrivalAirport();
-        getOneStopAvailableRoutes(departure, arrival);
+        LocalDateTime departureDateTime = flightRequirements.departureDateTime();
+        LocalDateTime arrivalDateTime = flightRequirements.arrivalDateTime();
+        List<AbstractMap.SimpleImmutableEntry<Leg, Leg>> feasibleFlight = new ArrayList<>();
+        for (Route route: getOneStopAvailableRoutes(departure, arrival)) {
+            Leg firstLegRequirements = new Leg(
+                    route.origin(), route.intermediateStep(),
+                    departureDateTime, arrivalDateTime);
+            List<Leg> firstLegList = getDirectConnections(firstLegRequirements);
+            for (Leg firstLeg: firstLegList) {
+                Leg secondLegRequirements = new Leg(
+                        route.intermediateStep(), route.destination(),
+                        firstLeg.arrivalDateTime().plusHours(MIN_INTERCONNECTION_WAITING_HOURS), arrivalDateTime);
+                feasibleFlight.addAll(getDirectConnections(secondLegRequirements).stream()
+                        .map(secondLeg -> new AbstractMap.SimpleImmutableEntry<>(firstLeg, secondLeg))
+                        .toList());
+            }
+        }
 
-        // TODO: get one stop connections and filter based on connection time > 2h and arrival date times
-        return null;
+        return feasibleFlight;
     }
 
     private List<Route> getOneStopAvailableRoutes(String origin, String destination) {
         List<RouteDTO> routes = routesApiClient.getAvailableRoutes();
         logger.log(Level.INFO,
-                "Reducing all possible one step interconnections to those which match with departure and arrival...");
+                "Reckoning one step available interconnections to departure from: {0} and arrival at: {1}",
+                new Object[]{origin, destination});
         Set<String> originRoutes = routes.stream()
                 .filter(r -> (r.airportFrom().equals(origin) && !r.airportTo().equals(destination)))
                 .map(RouteDTO::airportTo)
@@ -82,6 +103,7 @@ public class FlightConnectionServiceImpl implements IFlightConnectionService {
                 .filter(r -> (r.airportTo().equals(destination) && !r.airportFrom().equals(origin)))
                 .map(RouteDTO::airportFrom)
                 .collect(Collectors.toSet());
+        // Intersection of both intermediate destinations
         originRoutes.retainAll(destinationRoutes);
 
         return originRoutes.stream()

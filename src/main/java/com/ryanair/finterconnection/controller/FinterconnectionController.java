@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -28,19 +29,31 @@ public class FinterconnectionController {
     public List<InterconnectionDTO> getInterconnections(@RequestParam String departure, @RequestParam String arrival,
                                                         @RequestParam LocalDateTime departureDateTime,
                                                         @RequestParam LocalDateTime arrivalDateTime) {
-        List<Leg> directLegs = flightConnectionService.getDirectConnections(
-                new Leg(departure, arrival, departureDateTime, arrivalDateTime));
+        Leg flightRequirements = new Leg(departure, arrival, departureDateTime, arrivalDateTime);
+        List<Leg> directLegs = flightConnectionService.getDirectConnections(flightRequirements);
         logger.log(Level.INFO, "Direct Flights obtained");
-        List<InterconnectionDTO> interconnections = new ArrayList<>();
-        interconnections.add(new InterconnectionDTO(0, directLegs.stream()
-                .map(dL -> new LegDTO(
-                        dL.departureAirport(),
-                        dL.arrivalAirport(),
-                        dL.departureDateTime().toString(),
-                        dL.arrivalDateTime().toString())
-                ).toList())
-        );
+        List<InterconnectionDTO> interconnections = new ArrayList<>(directLegs.stream()
+                .map(dL -> new InterconnectionDTO(0, List.of(mapLegToLegDTO(dL))))
+                .toList());
+        // TODO: one thread to any flight request
+        List<AbstractMap.SimpleImmutableEntry<Leg, Leg>> oneStopLegs =
+                flightConnectionService.getOneStepConnections(flightRequirements);
+        logger.log(Level.INFO, "One Stop Flights obtained");
+        interconnections.addAll(oneStopLegs.stream()
+                .map(twoL -> {
+                    Leg firstLeg = twoL.getKey();
+                    Leg secondLeg = twoL.getValue();
+                    LegDTO firstLegDTO = mapLegToLegDTO(firstLeg);
+                    LegDTO secondLegDTO = mapLegToLegDTO(secondLeg);
+                    return new InterconnectionDTO(1, List.of(firstLegDTO, secondLegDTO));
+                }).toList());
 
         return interconnections;
+    }
+
+    private LegDTO mapLegToLegDTO(Leg leg) {
+        return new LegDTO(
+                leg.departureAirport(), leg.arrivalAirport(),
+                leg.departureDateTime().toString(), leg.arrivalDateTime().toString());
     }
 }
