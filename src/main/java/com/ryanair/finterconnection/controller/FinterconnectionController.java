@@ -35,7 +35,6 @@ public class FinterconnectionController {
         List<InterconnectionDTO> interconnections = new ArrayList<>(directLegs.stream()
                 .map(dL -> new InterconnectionDTO(0, List.of(mapLegToLegDTO(dL))))
                 .toList());
-        // TODO: one thread to any flight request
         List<AbstractMap.SimpleImmutableEntry<Leg, Leg>> oneStopLegs =
                 flightConnectionService.getOneStepConnections(flightRequirements);
         logger.log(Level.INFO, "One Stop Flights obtained");

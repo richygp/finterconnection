@@ -13,6 +13,10 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -67,27 +71,55 @@ public class FlightConnectionServiceImpl implements IFlightConnectionService {
 
     @Override
     public List<AbstractMap.SimpleImmutableEntry<Leg, Leg>> getOneStepConnections(Leg flightRequirements) {
+        List<AbstractMap.SimpleImmutableEntry<Leg, Leg>> feasibleFlights = new ArrayList<>();
+        List<Callable<List<AbstractMap.SimpleImmutableEntry<Leg, Leg>>>> routeFlights = new ArrayList<>();
+        populateRouteFunctions(routeFlights, flightRequirements);
+        ExecutorService executor = Executors.newWorkStealingPool();
+        try {
+            executor.invokeAll(routeFlights).stream()
+                    .map(future -> {
+                        List<AbstractMap.SimpleImmutableEntry<Leg, Leg>> lFlights = new ArrayList<>();
+                        try {
+                            lFlights = future.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            logger.log(Level.SEVERE, "Error while trying to get Futures in thread execution");
+                            Thread.currentThread().interrupt();
+                        }
+                        return lFlights;
+                    })
+                    .forEach(feasibleFlights::addAll);
+        } catch (InterruptedException e) {
+            logger.log(Level.SEVERE, "Interrupted Exception while multithreading execution");
+            Thread.currentThread().interrupt();
+        }
+
+        return feasibleFlights;
+    }
+
+    private void populateRouteFunctions(List<Callable<List<AbstractMap.SimpleImmutableEntry<Leg, Leg>>>> routeFlights,
+                                        Leg flightRequirements) {
         String departure = flightRequirements.departureAirport();
         String arrival = flightRequirements.arrivalAirport();
         LocalDateTime departureDateTime = flightRequirements.departureDateTime();
         LocalDateTime arrivalDateTime = flightRequirements.arrivalDateTime();
-        List<AbstractMap.SimpleImmutableEntry<Leg, Leg>> feasibleFlight = new ArrayList<>();
         for (Route route: getOneStopAvailableRoutes(departure, arrival)) {
-            Leg firstLegRequirements = new Leg(
-                    route.origin(), route.intermediateStep(),
-                    departureDateTime, arrivalDateTime);
-            List<Leg> firstLegList = getDirectConnections(firstLegRequirements);
-            for (Leg firstLeg: firstLegList) {
-                Leg secondLegRequirements = new Leg(
-                        route.intermediateStep(), route.destination(),
-                        firstLeg.arrivalDateTime().plusHours(MIN_INTERCONNECTION_WAITING_HOURS), arrivalDateTime);
-                feasibleFlight.addAll(getDirectConnections(secondLegRequirements).stream()
-                        .map(secondLeg -> new AbstractMap.SimpleImmutableEntry<>(firstLeg, secondLeg))
-                        .toList());
-            }
+            routeFlights.add(() -> {
+                List<AbstractMap.SimpleImmutableEntry<Leg, Leg>> rFlights = new ArrayList<>();
+                Leg firstLegRequirements = new Leg(
+                        route.origin(), route.intermediateStep(),
+                        departureDateTime, arrivalDateTime);
+                List<Leg> firstLegList = getDirectConnections(firstLegRequirements);
+                for (Leg firstLeg: firstLegList) {
+                    Leg secondLegRequirements = new Leg(
+                            route.intermediateStep(), route.destination(),
+                            firstLeg.arrivalDateTime().plusHours(MIN_INTERCONNECTION_WAITING_HOURS), arrivalDateTime);
+                    rFlights.addAll(getDirectConnections(secondLegRequirements).stream()
+                            .map(secondLeg -> new AbstractMap.SimpleImmutableEntry<>(firstLeg, secondLeg))
+                            .toList());
+                }
+                return rFlights;
+            });
         }
-
-        return feasibleFlight;
     }
 
     private List<Route> getOneStopAvailableRoutes(String origin, String destination) {
