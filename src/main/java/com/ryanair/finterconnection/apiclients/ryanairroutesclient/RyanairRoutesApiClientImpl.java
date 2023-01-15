@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.Duration;
 import java.util.List;
 
 @Service
@@ -15,6 +16,8 @@ public class RyanairRoutesApiClientImpl implements IRyanairRoutesApiClient {
     private String ryanairServicesUrl;
     @Value("${ryanair.routes.path:locate/3/routes}")
     private String path;
+    @Value("${request.timeout.seconds:5}")
+    private int timeout;
     public static final String OPERATOR_FILTER_NAME = "RYANAIR";
 
     @Override
@@ -28,6 +31,7 @@ public class RyanairRoutesApiClientImpl implements IRyanairRoutesApiClient {
                 .uri(this.path)
                 .retrieve()
                 .bodyToFlux(RouteDTO.class)
+                .timeout(Duration.ofSeconds(timeout))
                 .filter(f -> f.connectingAirport() == null && f.operator().equals(OPERATOR_FILTER_NAME))
                 .collectList()
                 .block();

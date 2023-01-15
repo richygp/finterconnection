@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Service
@@ -15,6 +16,8 @@ public class RyanairScheduleApiClientImpl implements IRyanairScheduleApiClient {
     private String ryanairServicesUrl;
     @Value("${ryanair.schedules.path:timtbl/3/schedules}")
     private String path;
+    @Value("${request.timeout.seconds:5}")
+    private int timeout;
 
     @Override
     public ScheduleDTO getScheduleForYearAndMonth(String departure, String arrival, LocalDateTime departureDateTime) {
@@ -32,6 +35,7 @@ public class RyanairScheduleApiClientImpl implements IRyanairScheduleApiClient {
                 .uri(completePath)
                 .retrieve()
                 .bodyToMono(ScheduleDTO.class)
+                .timeout(Duration.ofSeconds(timeout))
                 .block();
     }
 }
