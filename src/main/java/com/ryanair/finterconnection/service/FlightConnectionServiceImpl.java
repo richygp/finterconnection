@@ -93,7 +93,9 @@ public class FlightConnectionServiceImpl implements IFlightConnectionService {
             Thread.currentThread().interrupt();
         }
 
-        return feasibleFlights;
+        return feasibleFlights.stream()
+                .filter(f -> f.getKey().departureDateTime().isBefore(f.getValue().arrivalDateTime()))
+                .toList();
     }
 
     private void populateRouteFunctions(List<Callable<List<AbstractMap.SimpleImmutableEntry<Leg, Leg>>>> routeFlights,
