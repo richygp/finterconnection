@@ -4,12 +4,16 @@ import com.ryanair.finterconnection.apiclients.ryanairroutesclient.IRyanairRoute
 import com.ryanair.finterconnection.apiclients.ryanairscheduleclient.IRyanairScheduleApiClient;
 import com.ryanair.finterconnection.domain.Leg;
 import com.ryanair.finterconnection.domain.Route;
+import com.ryanair.finterconnection.dto.RouteDTO;
 import com.ryanair.finterconnection.dto.ScheduleDTO;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Service
 public class FlightConnectionServiceImpl implements IFlightConnectionService {
@@ -23,9 +27,13 @@ public class FlightConnectionServiceImpl implements IFlightConnectionService {
         this.scheduleApiClient = scheduleApiClient;
     }
     @Override
-    public List<Leg> getDirectConnections(String departure, String arrival,
-                                          LocalDateTime departureDateTime, LocalDateTime arrivalDateTime) {
+    public List<Leg> getDirectConnections(Leg flightRequirements) {
+        String departure = flightRequirements.departureAirport();
+        String arrival = flightRequirements.arrivalAirport();
+        LocalDateTime departureDateTime = flightRequirements.departureDateTime();
+        LocalDateTime arrivalDateTime = flightRequirements.arrivalDateTime();
         ScheduleDTO schedule = scheduleApiClient.getScheduleForYearAndMonth(departure, arrival, departureDateTime);
+        logger.log(Level.INFO, "Filtering all possible flights for a given month based on flight requirements...");
 
         return schedule.days().stream()
                 .filter(d -> d.day() >= departureDateTime.getDayOfMonth() && d.day() <= arrivalDateTime.getDayOfMonth())
@@ -53,8 +61,31 @@ public class FlightConnectionServiceImpl implements IFlightConnectionService {
     }
 
     @Override
-    public List<Route> getIntermediateConnections(String origin, String destination) {
+    public List<Leg> getOneStepConnections(Leg flightRequirements) {
+        String departure = flightRequirements.departureAirport();
+        String arrival = flightRequirements.arrivalAirport();
+        getOneStopAvailableRoutes(departure, arrival);
+
         // TODO: get one stop connections and filter based on connection time > 2h and arrival date times
         return null;
+    }
+
+    private List<Route> getOneStopAvailableRoutes(String origin, String destination) {
+        List<RouteDTO> routes = routesApiClient.getAvailableRoutes();
+        logger.log(Level.INFO,
+                "Reducing all possible one step interconnections to those which match with departure and arrival...");
+        Set<String> originRoutes = routes.stream()
+                .filter(r -> (r.airportFrom().equals(origin) && !r.airportTo().equals(destination)))
+                .map(RouteDTO::airportTo)
+                .collect(Collectors.toSet());
+        Set<String> destinationRoutes = routes.stream()
+                .filter(r -> (r.airportTo().equals(destination) && !r.airportFrom().equals(origin)))
+                .map(RouteDTO::airportFrom)
+                .collect(Collectors.toSet());
+        originRoutes.retainAll(destinationRoutes);
+
+        return originRoutes.stream()
+                .map(i -> new Route(origin, i, destination))
+                .toList();
     }
 }

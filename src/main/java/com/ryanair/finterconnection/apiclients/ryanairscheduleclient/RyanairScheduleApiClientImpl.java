@@ -22,7 +22,8 @@ public class RyanairScheduleApiClientImpl implements IRyanairScheduleApiClient {
                 .baseUrl(this.ryanairServicesUrl)
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .build();
-        var completePath = this.path.concat("/").concat(departure)
+        var completePath = this.path
+                .concat("/").concat(departure)
                 .concat("/").concat(arrival)
                 .concat("/years/").concat(String.valueOf(departureDateTime.getYear()))
                 .concat("/months/").concat(String.valueOf(departureDateTime.getMonthValue()));

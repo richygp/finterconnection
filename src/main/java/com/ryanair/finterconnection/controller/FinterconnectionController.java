@@ -29,10 +29,8 @@ public class FinterconnectionController {
                                                         @RequestParam LocalDateTime departureDateTime,
                                                         @RequestParam LocalDateTime arrivalDateTime) {
         List<Leg> directLegs = flightConnectionService.getDirectConnections(
-                departure, arrival, departureDateTime, arrivalDateTime);
-        directLegs.forEach(l ->
-                logger.log(Level.INFO, "Direct connection found :{0} departing at {1} --> {2} arriving at {3}",
-                new Object[]{l.departureAirport(), l.departureDateTime(), l.arrivalAirport(), l.arrivalDateTime()}));
+                new Leg(departure, arrival, departureDateTime, arrivalDateTime));
+        logger.log(Level.INFO, "Direct Flights obtained");
         List<InterconnectionDTO> interconnections = new ArrayList<>();
         interconnections.add(new InterconnectionDTO(0, directLegs.stream()
                 .map(dL -> new LegDTO(
