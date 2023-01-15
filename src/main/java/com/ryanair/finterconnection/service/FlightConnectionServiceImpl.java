@@ -105,6 +105,7 @@ public class FlightConnectionServiceImpl implements IFlightConnectionService {
                 .collect(Collectors.toSet());
         // Intersection of both intermediate destinations
         originRoutes.retainAll(destinationRoutes);
+        logger.log(Level.INFO, "Available intermediate stops: {0}", originRoutes);
 
         return originRoutes.stream()
                 .map(i -> new Route(origin, i, destination))
