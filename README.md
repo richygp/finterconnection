@@ -23,6 +23,8 @@ There is one service defined, responsible for retrieving flight details. Two mai
 ### Possible improvements
 
 * Define a service which returns the available and updated IATA codes from airports as enum constants.
+* Paginate the "interconnections" edpoint
+* JavaDoc and more unit tests scenarios
 * Reduce complexity when reckoning one-step flights.
 * Better parameter validation. At the moment it only checks that it fits in number and if all
   required are present.

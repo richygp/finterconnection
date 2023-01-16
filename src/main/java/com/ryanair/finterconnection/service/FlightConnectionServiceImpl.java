@@ -92,6 +92,7 @@ public class FlightConnectionServiceImpl implements IFlightConnectionService {
             logger.log(Level.SEVERE, "Interrupted Exception while multithreading execution");
             Thread.currentThread().interrupt();
         }
+        executor.shutdown();
 
         return feasibleFlights.stream()
                 .filter(f -> f.getKey().departureDateTime().isBefore(f.getValue().arrivalDateTime()))
